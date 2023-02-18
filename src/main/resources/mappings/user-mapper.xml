@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="UserDAO">
+	<!-- 쿼리 작성 영역 -->
+	<select id="idCheck" parameterType="String" resultType="int">
+		SELECT COUNT(USER_ID)
+			FROM AL_USER
+			WHERE USER_ID = #{userId}	
+	</select>
+	
+	<select id="nicknameCheck" parameterType="String" resultType="int">
+		SELECT COUNT(USER_NICKNAME)
+			FROM AL_USER
+			WHERE USER_NICKNAME = #{userNickname}	
+	</select>
+	
+	<insert id="join" parameterType="user">
+	<![CDATA[
+		INSERT INTO AL_USER(
+			USER_ID,
+			USER_PW,
+			USER_NAME,
+			USER_NICKNAME,
+			USER_BIRTH,
+			USER_REGDATE,
+			USER_MODFDATE,
+			USER_USE_YN
+		) VALUES (
+			#{userId},
+			#{userPw},
+			#{userName},
+			#{userNickname},
+			#{userBirth},
+			NOW(),
+			NOW(),
+			'Y'
+		)
+	]]>
+	</insert>
+	
+	<select id="login" parameterType="user" resultType="user">
+	<![CDATA[
+		SELECT USER_ID
+			,USER_PW
+			,USER_NAME
+			,USER_NICKNAME
+			,USER_BIRTH
+			FROM AL_USER
+			WHERE USER_ID = #{userId}
+			  AND USER_PW = #{userPw}
+			  AND USER_USE_YN = 'Y'
+	]]>
+	</select>
+	
+	<select id="searchId" parameterType="user" resultType="string">
+	<![CDATA[
+		SELECT USER_ID FROM AL_USER
+			WHERE USER_NAME = #{userName}
+			  AND USER_BIRTH = #{userBirth}
+			  AND USER_USE_YN = 'Y'
+	
+	]]>    
+	</select>
+	
+	<select id="searchPw" parameterType="user" resultType="string">
+	<![CDATA[
+		SELECT USER_PW FROM AL_USER
+			WHERE USER_ID = #{userId}
+			  AND USER_NAME = #{userName}
+			  AND USER_BIRTH = #{userBirth}
+	
+	]]>    
+	</select>
+	
+	<update id="updateMyInfo" parameterType="user">
+	<![CDATA[
+		UPDATE AL_USER
+	]]>
+		<set>
+			<if test="userPw != null and userPw != ''">USER_PW = #{userPw},</if>
+			<if test="userName != null and userName != ''">USER_NAME = #{userName},</if>
+			<if test="userNickname != null and userNickname != ''">USER_NICKNAME = #{userNickname},</if>
+			<if test="userBirth != null and userBirth != ''">USER_BIRTH = #{userBirth},</if>
+		</set>
+		<![CDATA[
+		WHERE USER_ID = #{userId}
+		]]>
+	
+	</update>
+	
+	
+	
+</mapper>

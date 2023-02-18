@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="LctrDAO">
+	<!-- 쿼리 작성 영역 -->
+	
+	<select id="getLctrList" resultType="lctr">
+		SELECT * FROM AL_LCTR
+	</select>
+	
+	<select id="getSearchLctrList" parameterType="map" resultType="lctr">
+	<![CDATA[
+		SELECT A.*
+			FROM (
+					SELECT * 
+						FROM AL_LCTR
+						WHERE LCTR_USE_YN = 'Y'
+				  ) A
+	]]>
+		<if test="searchKeyword != null and searchKeyword != ''">
+			WHERE 1 = 0
+				OR A.LCTR_TITLE LIKE CONCAT('%', #{searchKeyword}, '%') 
+				OR A.LCTR_DETAILS LIKE CONCAT('%', #{searchKeyword}, '%')
+		</if>			
+	</select>
+
+	<select id="getLctr" parameterType="int" resultType="lctr">
+		SELECT * FROM AL_LCTR
+		WHERE LCTR_CODE = #{lctrCode }
+	</select>
+	
+	<!-- 좋아요 클릭 여부 좋아요 클릭했으면 1 아니면 0 -->
+	<select id="getLctrLike" resultType="int">
+		SELECT COUNT(*) FROM AL_LCTR_LIKE
+			WHERE LCTR_CODE = #{lctrCode} and USER_ID = #{userId}
+	</select>
+	
+	<select id="getLctrLikeCnt" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+			FROM AL_LCTR_LIKE
+			WHERE LCTR_CODE = #{lctrCode}
+	</select>
+	
+	<delete id="deleteLctrLike" parameterType="lctrLike">
+	DELETE FROM AL_LCTR_LIKE
+	WHERE LCTR_CODE = #{lctrCode} AND USER_ID = #{userId}
+	</delete>
+
+	<insert id="addLctrLike" parameterType="lctrLike">
+	INSERT INTO AL_LCTR_LIKE
+		VALUES (
+				#{lctrCode}, 
+				#{userId}
+				)
+	</insert>
+	
+	<update id="updateLctrLike" parameterType="int">
+	UPDATE AL_LCTR
+	SET
+	LCTR_LIKE = (SELECT COUNT(*) FROM AL_LCTR_LIKE WHERE LCTR_CODE = #{lctrCode})
+	WHERE LCTR_CODE = #{lctrCode}
+	</update>
+	
+	<!-- 수강신청 여부 수강신청했으면 1 아니면 0 -->
+	<select id="getLctrUser" resultType="int">
+		SELECT COUNT(*) FROM AL_USER_LCTR
+			WHERE LCTR_CODE = #{lctrCode} and USER_ID = #{userId}
+	</select>
+	
+	<select id="getLctrUserCnt" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+			FROM AL_USER_LCTR
+			WHERE LCTR_CODE = #{lctrCode}
+	</select>
+	
+	<delete id="deleteLctrUser" parameterType="lctrUser">
+	DELETE FROM AL_USER_LCTR
+	WHERE LCTR_CODE = #{lctrCode} AND USER_ID = #{userId}
+	</delete>
+
+	<insert id="addLctrUser" parameterType="lctrUser">
+	INSERT INTO AL_USER_LCTR
+		VALUES (
+				#{userId},
+				#{lctrCode}
+				)
+	</insert>
+	
+	<select id="getLctrUserList" parameterType="lctrUser" resultType="lctr">
+		SELECT * FROM AL_LCTR 
+			WHERE LCTR_CODE IN 
+			(SELECT LCTR_CODE FROM AL_USER_LCTR WHERE USER_ID = #{userId})
+	</select>
+	
+	<!-- 수강평 등록 -->
+	<insert id="addReview" parameterType="review">
+		<selectKey resultType="int" keyProperty="reCode" order="BEFORE">
+			SELECT IFNULL(MAX(RE_CODE), 0) + 1 FROM AL_REVIEW
+		</selectKey>
+		INSERT INTO AL_REVIEW
+			VALUES (
+				#{reCode},
+				#{lctrCode},
+				#{userId},
+				#{userNickname},
+				#{reScore},
+				#{reContents},
+				NOW(),
+				NOW(),
+				"Y"
+			)
+	</insert>
+	
+	<!-- 수강평 보기 -->
+	<select id="getReview" parameterType="int" resultType="review">
+		SELECT * FROM AL_REVIEW
+			WHERE LCTR_CODE = #{lctrCode}
+			  AND RE_DEL_YN = 'Y'
+	</select>
+	
+	<!-- 수강평 카운트 -->
+	<select id="getReviewCnt" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+			FROM AL_REVIEW
+			WHERE LCTR_CODE = #{lctrCode}
+			  AND RE_DEL_YN = 'Y'
+	</select>
+	
+	<!-- 수강평 삭제 -->
+	<update id="deleteReview" parameterType="review">
+		UPDATE AL_REVIEW
+			SET RE_DEL_YN = 'N'
+			WHERE LCTR_CODE = #{lctrCode} 
+			  AND RE_CODE = #{reCode}
+	</update>
+	
+	<update id="updateLctrCnt" parameterType="int">
+	UPDATE AL_LCTR
+		SET LCTR_CNT = LCTR_CNT + 1
+		WHERE LCTR_CODE = #{lctrCode}
+	</update>
+	
+	<select id="avgScore" parameterType="int" resultType="float">
+	SELECT AVG(RE_SCORE) FROM AL_REVIEW
+		WHERE LCTR_CODE = #{lctrCode}
+		  AND RE_DEL_YN = 'Y'
+	</select>
+	
+	<select id="getLctrReviewList" resultType="review">
+	SELECT * FROM AL_REVIEW
+		WHERE RE_DEL_YN = 'Y'
+	</select>
+	
+	<select id="getMainLctrList" resultType="lctr">
+		SELECT A.*,
+			   B.CNT
+			FROM AL_LCTR A,
+				 (
+					SELECT COUNT(*) AS CNT,
+						   LCTR_CODE
+						FROM AL_LCTR_LIKE
+		                GROUP BY LCTR_CODE
+				 ) B
+			WHERE A.LCTR_CODE = B.LCTR_CODE
+		    ORDER BY B.CNT DESC
+		    LIMIT 2
+	</select>
+	
+	<select id="getSubLctrList" resultType="lctr">
+		select * from al_lctr ORDER BY LCTR_TITLE DESC LIMIT 8 OFFSET 0;
+	</select>
+	
+	<select id="getLctrReviewCnt" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+			FROM AL_REVIEW
+			WHERE RE_DEL_YN = 'Y'
+	</select>
+</mapper>
